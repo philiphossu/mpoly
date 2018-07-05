@@ -15,28 +15,36 @@
 #' 
 #' # Simple linear variety
 #' variety <- mp("y-x+2")
-#' ggvariety(variety, c(-2,2), c(-2,2), 20)
+#' ggvariety(variety, c(-2,2), c(-2,2))
 #' 
-#' # Alpha curve (not smooth)
-#' ggvariety(mp("y^2-x^3-x^2"), c(-2,2), c(-2,2), 50)
+#' # Alpha curve
+#' ggvariety("y^2-x^3-x^2", xlim = c(-2, 2), ylim = c(-2, 2), 501)
 #' 
 #' # Alpha curve (smooth)
-#' ggvariety(mp("y^2-x^3-x^2"), c(-2,2), c(-2,2), 400)
+#' ggvariety("y^2-x^3-x^2", xlim = c(-2, 2), ylim = c(-2, 2)) + 
+#' coord_equal()
 #' 
 #' 
 
-ggvariety <- function(mp, xlim, ylim, obs = 101, ...) {
+ggvariety <- function(mp, xlim, ylim, nx = 101, ny = nx, ...) {
+  # Check if mp argument was mpoly obj
+  require("mpoly")
+  if (!is.mpoly(mp)) mp <- mpoly::mp(mp)
+  f <- as.function(mp, varorder = c("x", "y"), vector = FALSE, silent = TRUE)
+  
   # make a data frame
+  require("dplyr"); require("purrr")
   df <- data_frame(
-    x = seq(xlim[1], xlim[2], length.out = obs), 
-    y = seq(ylim[1], ylim[2], length.out = obs)
-  )
-  df <- cross_df(df)
-  df <- mutate(df, z = as.function(mp, varorder = c("x", "y"), 
-               vector = FALSE, silent = TRUE)(x,y))
+    x = seq(xlim[1], xlim[2], length.out = nx), 
+    y = seq(ylim[1], ylim[2], length.out = ny)
+  ) %>% 
+    cross_df() %>% 
+    mutate(z = f(x,y))
 
   # make the plot using geom_contour()
-  ggplot(df, aes(x,y,z=z)) + geom_contour(breaks = 0) + coord_equal()
+  require("ggplot2")
+  ggplot(df, aes(x, y, z = z)) + 
+    geom_contour(breaks = 0)
 }
 
 
